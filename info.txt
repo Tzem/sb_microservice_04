@@ -1,0 +1,6 @@
+https://www.sumologic.com/blog/kubernetes-deploy-postgres/
+
+pass = RUYU2ds3GLAmzseb
+
+echo "RUYU2ds3GLAmzseb" | base64
+base64 UlVZVTJkczNHTEFtenNlYgo=

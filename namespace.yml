@@ -1,0 +1,6 @@
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: kgb-lesson04
+  labels:
+    name: kdoom

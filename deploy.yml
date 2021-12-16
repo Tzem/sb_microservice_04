@@ -1,0 +1,48 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pgsql-deploy
+  namespace: kgb-lesson04
+  labels:
+    app: pgsql-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pgsql-app
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: pgsql-app 
+    spec:    
+      hostNetwork: true
+      serviceAccountName: pg-service
+      containers:
+      - image: postgres:10.13
+        name: pgsql-pod
+        ports:
+        - containerPort: 5432
+        volumeMounts:
+        - mountPath: "/var/lib/postgresql/data"
+          name: pg-data
+        env:
+          - name: POSTGRES_DB
+            value: "testdatabase"
+          - name: POSTGRES_USER
+            value: "testuser"
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: pg-secret
+                key: password
+          - name: PGDATA
+            value: "/var/lib/postgresql/data/pgdata"
+      volumes:
+      - name: pg-data
+        persistentVolumeClaim:
+            claimName: pg-volume
+
