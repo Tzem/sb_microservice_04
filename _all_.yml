@@ -1,0 +1,112 @@
+---
+# Namespace
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: gb-lesson04
+  labels:
+    name: kdoom
+
+---
+# Config
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: gb-lesson04
+data:
+  db_user: "testuser"
+  db_name: "testdatabase"
+  db_info: "database"
+
+---
+# Secret
+apiVersion: v1
+kind: Secret
+metadata:
+  name: app-secret
+  namespace: gb-lesson04
+type: Opaque
+data:
+  password: dGVzdHBhc3N3b3JkCg==
+  supersecretkey: c3VwZXJzZWNyZXRrZXkK
+
+---
+# PVC
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  namespace: gb-lesson04
+  name: pg-volume
+  labels:
+    type: local
+spec:
+  storageClassName: standard
+  resources:
+    requests:
+      storage: 10Gi
+  accessModes:
+    - ReadWriteOnce
+
+---
+# Service 
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: pg-service
+  namespace: gb-lesson04
+
+---
+# Deployment db containers
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pgsql-deploy
+  namespace: gb-lesson04
+  labels:
+    app: pgsql-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pgsql-app
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: pgsql-app 
+    spec:    
+      hostNetwork: true
+      serviceAccountName: pg-service
+      containers:
+      - image: postgres:10.13
+        name: pgsql-instance
+        ports:
+        - containerPort: 5432
+        volumeMounts:
+        - mountPath: "/var/lib/postgresql/data"
+          name: pg-data
+        env:
+          - name: POSTGRES_DB
+            valueFrom:
+              configMapKeyRef:
+                name: app-config
+                key: db_name
+          - name: POSTGRES_USER
+            valueFrom:
+              configMapKeyRef:
+                name: app-config
+                key: db_user
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: app-secret
+                key: password
+          - name: PGDATA
+            value: "/var/lib/postgresql/data/pgdata"
+      volumes:
+      - name: pg-data
+        persistentVolumeClaim:
+            claimName: pg-volume
